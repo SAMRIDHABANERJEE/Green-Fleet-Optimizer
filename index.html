@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Green Fleet Optimizer – SIH26138</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E6EDEF; --card:#F6F9FA; --ink:#0E2E44; --ink2:#496273; --line:rgba(14,46,68,.16);
+  --water:#CBE0E6; --water2:#B9D3DB; --land:#EADFB6; --landline:#B7A86F; --grid:rgba(14,46,68,.13);
+  --base:#6B8696; --opt:#B0205D; --good:#17704F; --bad:#A8431A; --btn:#0E2E44; --btntext:#F6F9FA;
+  --f-lng:#2B7FB8; --f-meoh:#C58A1B; --f-nh3:#17704F; --f-vlsfo:#6B8696;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0B1A25; --card:#112433; --ink:#DCE9EE; --ink2:#93AEBC; --line:rgba(220,233,238,.17);
+    --water:#0F2A3A; --water2:#143749; --land:#2B2F27; --landline:#5E5B45; --grid:rgba(220,233,238,.13);
+    --base:#8AA4B3; --opt:#FF76AB; --good:#59D0A0; --bad:#FF9A66; --btn:#DCE9EE; --btntext:#0B1A25;
+    --f-lng:#5BB0E8; --f-meoh:#E5B04A; --f-nh3:#59D0A0; --f-vlsfo:#8AA4B3;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0B1A25; --card:#112433; --ink:#DCE9EE; --ink2:#93AEBC; --line:rgba(220,233,238,.17);
+  --water:#0F2A3A; --water2:#143749; --land:#2B2F27; --landline:#5E5B45; --grid:rgba(220,233,238,.13);
+  --base:#8AA4B3; --opt:#FF76AB; --good:#59D0A0; --bad:#FF9A66; --btn:#DCE9EE; --btntext:#0B1A25;
+  --f-lng:#5BB0E8; --f-meoh:#E5B04A; --f-nh3:#59D0A0; --f-vlsfo:#8AA4B3;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+*,*::before,*::after{box-sizing:border-box;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+h1,h2,h3{font-family:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;margin:0;font-weight:600;letter-spacing:.005em;line-height:1.1;}
+p{margin:0;}
+.wrap{max-width:1240px;margin:0 auto;padding:18px 20px 40px;}
+.top{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:flex-end;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid var(--line);}
+.top h1{font-size:clamp(30px,4.4vw,46px);font-weight:700;}
+.top .sub{color:var(--ink2);max-width:60ch;margin-top:6px;}
+.tabs{display:flex;gap:4px;}
+.tab{font:inherit;font-weight:500;background:none;border:0;border-bottom:3px solid transparent;color:var(--ink2);padding:8px 12px;cursor:pointer;}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--opt);}
+.tab:hover{color:var(--ink);}
+:focus-visible{outline:3px solid var(--opt);outline-offset:2px;}
+.hidden{display:none !important;}
+
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;margin-top:18px;align-items:start;}
+.mapcard{position:relative;border:1px solid var(--line);border-radius:3px;overflow:hidden;background:var(--water);}
+#map{display:block;width:100%;height:auto;}
+.maphud{position:absolute;left:12px;top:10px;right:12px;display:flex;flex-wrap:wrap;gap:6px;pointer-events:none;}
+.chip{pointer-events:auto;font:inherit;font-size:14px;font-weight:500;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:2px 11px;cursor:pointer;}
+.chip[aria-pressed="true"]{background:var(--opt);border-color:var(--opt);color:#fff;}
+.maplegend{position:absolute;left:12px;bottom:10px;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:7px 11px;font-size:13px;color:var(--ink2);display:grid;gap:3px;}
+.maplegend i{display:inline-block;width:22px;height:0;border-top:3px solid var(--opt);vertical-align:middle;margin-right:7px;}
+.maplegend i.d{border-top:2px dashed var(--base);}
+.panel{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:16px;}
+.panel h2{font-size:24px;margin-bottom:10px;}
+.field{margin-top:16px;}
+.field>label,.field>.lab{display:flex;justify-content:space-between;font-weight:500;font-size:15px;margin-bottom:6px;}
+.field output{color:var(--ink2);font-variant-numeric:tabular-nums;}
+.hint{font-size:13px;color:var(--ink2);margin-top:4px;}
+.seg{position:relative;display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+.seg input{position:absolute;opacity:0;pointer-events:none;}
+.seg label{text-align:center;padding:7px 4px;font-size:14px;cursor:pointer;border-right:1px solid var(--line);}
+.seg label:last-of-type{border-right:0;}
+.seg input:checked+label{background:var(--ink);color:var(--paper);}
+.seg input:focus-visible+label{outline:3px solid var(--opt);outline-offset:-3px;}
+input[type=range]{width:100%;accent-color:var(--opt);}
+select{font:inherit;width:100%;padding:7px 8px;border-radius:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink);}
+.btn{font:inherit;font-weight:600;width:100%;margin-top:18px;padding:11px 14px;border-radius:6px;border:0;background:var(--btn);color:var(--btntext);cursor:pointer;}
+.btn:disabled{opacity:.55;cursor:progress;}
+.status{margin-top:10px;font-size:14px;color:var(--ink2);min-height:21px;}
+.wx{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:14px;color:var(--ink2);}
+.wx b{color:var(--ink);font-weight:600;}
+
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:18px;}
+.kpi{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:14px 16px;}
+.kpi .k{font-size:15px;color:var(--ink2);}
+.kpi .v{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:clamp(34px,4vw,46px);line-height:1.05;font-variant-numeric:tabular-nums;margin-top:4px;}
+.kpi .v small{font-size:.45em;font-weight:500;color:var(--ink2);margin-left:4px;}
+.kpi .w{font-size:14px;color:var(--ink2);margin-top:4px;font-variant-numeric:tabular-nums;}
+.delta{display:inline-block;font-weight:600;color:var(--good);margin-right:6px;}
+.delta.up{color:var(--bad);}
+
+.row2{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:14px;margin-top:14px;}
+.card{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:16px;}
+.card h2{font-size:24px;margin-bottom:2px;}
+.card .cap{color:var(--ink2);font-size:14px;margin-bottom:10px;}
+svg text{font-family:"Barlow",system-ui,sans-serif;}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:14px;color:var(--ink2);margin-top:6px;}
+.legend span::before{content:"";display:inline-block;width:11px;height:11px;border-radius:2px;background:var(--c,var(--base));margin-right:6px;vertical-align:-1px;}
+.legend span.ln::before{height:3px;border-radius:0;vertical-align:3px;width:18px;}
+.scroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:15px;min-width:760px;}
+th{font-weight:600;text-align:left;padding:8px 10px;border-bottom:2px solid var(--ink);white-space:nowrap;}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;font-variant-numeric:tabular-nums;}
+tr.sel td{background:rgba(176,32,93,.09);}
+tbody tr{cursor:pointer;}
+td .sm{display:block;color:var(--ink2);font-size:13px;}
+.tag{display:inline-block;font-size:12px;font-weight:600;border:1px solid var(--good);color:var(--good);border-radius:4px;padding:0 5px;margin-left:6px;}
+.pos{color:var(--good);font-weight:600;}
+.neg{color:var(--bad);font-weight:600;}
+.note{font-size:13px;color:var(--ink2);margin-top:14px;max-width:90ch;}
+
+.lab-grid{display:grid;grid-template-columns:320px minmax(0,1fr);gap:18px;margin-top:18px;align-items:start;}
+.big{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:44px;line-height:1.05;font-variant-numeric:tabular-nums;}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.stats div{border-left:3px solid var(--opt);padding-left:10px;}
+.stats .k{font-size:14px;color:var(--ink2);}
+.how{max-width:78ch;margin-top:18px;}
+.how h2{font-size:28px;margin:22px 0 6px;}
+.how p,.how li{margin-top:8px;}
+.how ul{padding-left:20px;}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;}
+.flow div{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:12px;}
+.flow b{display:block;font-family:"Barlow Condensed",sans-serif;font-size:20px;font-weight:600;}
+.flow span{font-size:14px;color:var(--ink2);}
+@media (max-width:980px){
+  .stage,.lab-grid,.row2{grid-template-columns:minmax(0,1fr);}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .flow{grid-template-columns:repeat(2,1fr);}
+}
+@media (max-width:520px){
+  .wrap{padding:14px 12px 32px;}
+  .kpis{gap:10px;}
+  .stats{grid-template-columns:1fr;}
+  .maplegend{display:none;}
+}
+@media (prefers-reduced-motion: reduce){ *{scroll-behavior:auto !important;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Green Fleet Optimizer</h1>
+      <p class="sub">Predicts fuel burn for each vessel, then searches thousands of fleet plans to cut fuel, cost and CO₂e while keeping every voyage on time. SIH26138, Indian coastal shipping demo.</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Dashboard sections">
+      <button class="tab" role="tab" id="t-plan" aria-selected="true" aria-controls="p-plan">Fleet plan</button>
+      <button class="tab" role="tab" id="t-lab" aria-selected="false" aria-controls="p-lab">Fuel predictor</button>
+      <button class="tab" role="tab" id="t-how" aria-selected="false" aria-controls="p-how">How it works</button>
+    </div>
+  </header>
+
+  <!-- ===================== FLEET PLAN ===================== -->
+  <section id="p-plan" role="tabpanel" aria-labelledby="t-plan">
+    <div class="stage">
+      <div class="mapcard">
+        <svg id="map" viewBox="0 0 1000 836" role="img" aria-label="Chart of the Indian coast showing six cargo voyages between eight ports"></svg>
+        <div class="maphud" id="chips" role="group" aria-label="Highlight a voyage"></div>
+        <div class="maplegend"><span><i></i>Optimized fleet plan, ships in motion</span><span><i class="d"></i>Same route, existing plan</span></div>
+      </div>
+
+      <aside class="panel" aria-label="Planning conditions">
+        <h2>Planning conditions</h2>
+        <div class="field">
+          <div class="lab" id="lbl-sc">Sea state</div>
+          <div class="seg" role="radiogroup" aria-labelledby="lbl-sc">
+            <input type="radio" name="sc" id="sc-calm" value="calm"><label for="sc-calm">Calm</label>
+            <input type="radio" name="sc" id="sc-monsoon" value="monsoon" checked><label for="sc-monsoon">Monsoon</label>
+            <input type="radio" name="sc" id="sc-cyclone" value="cyclone"><label for="sc-cyclone">Cyclone</label>
+          </div>
+        </div>
+        <div class="field">
+          <label for="lam">Carbon price <output id="o-lam">$150 / t</output></label>
+          <input type="range" id="lam" min="0" max="500" step="10" value="150">
+          <p class="hint">Higher prices push the plan toward cleaner fuels such as bio-methanol and green ammonia.</p>
+        </div>
+        <div class="field">
+          <label for="pop">Candidate plans per round <output id="o-pop">40</output></label>
+          <input type="range" id="pop" min="10" max="100" step="10" value="40">
+        </div>
+        <div class="field">
+          <label for="gen">Search rounds <output id="o-gen">150</output></label>
+          <input type="range" id="gen" min="30" max="300" step="10" value="150">
+        </div>
+        <button class="btn" id="run">Run optimizer</button>
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+        <div class="wx" id="wx"></div>
+      </aside>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="row2">
+      <div class="card">
+        <h2>Search progress</h2>
+        <p class="cap">Best plan found so far, as total cost including the carbon price. Lower is better.</p>
+        <svg id="conv" viewBox="0 0 560 250" width="100%" role="img" aria-label="Convergence chart comparing the quantum-inspired search with random search"></svg>
+        <div class="legend"><span class="ln" style="--c:var(--opt)">Quantum-inspired search</span><span class="ln" style="--c:var(--ink2)">Random search, same effort</span><span class="ln" style="--c:var(--base)">Existing plan</span></div>
+      </div>
+      <div class="card">
+        <h2>Fuel mix</h2>
+        <p class="cap">Share of onboard energy by fuel.</p>
+        <svg id="mix" viewBox="0 0 420 170" width="100%" role="img" aria-label="Fuel mix of the existing and optimized plans"></svg>
+        <div class="legend" id="mixlegend"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h2>Voyage by voyage</h2>
+      <p class="cap">Select a row to highlight its route on the chart.</p>
+      <div class="scroll"><table id="tbl"></table></div>
+      <p class="note">Demo model with illustrative fleet, fuel prices and weather values. The fuel predictor is trained in your browser on synthetic voyage data, so savings shown here are modelled results, not measured ones. CO₂e is net of fuel pathway credits for bio-methanol and green ammonia.</p>
+    </div>
+  </section>
+
+  <!-- ===================== PREDICTOR LAB ===================== -->
+  <section id="p-lab" role="tabpanel" aria-labelledby="t-lab" class="hidden">
+    <div class="lab-grid">
+      <div class="panel">
+        <h2>Try the predictor</h2>
+        <div class="field"><label for="l-ves">Vessel</label><select id="l-ves"></select></div>
+        <div class="field"><label for="l-v">Speed through water <output id="o-lv"></output></label><input type="range" id="l-v" step="0.1"></div>
+        <div class="field"><label for="l-load">Cargo load <output id="o-ll"></output></label><input type="range" id="l-load" min="15" max="100" step="1" value="80"></div>
+        <div class="field"><label for="l-hs">Wave height <output id="o-lh"></output></label><input type="range" id="l-hs" min="0" max="6" step="0.1" value="2"></div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="stats">
+            <div><div class="k">Predicted burn</div><div class="big" id="l-rate">–</div><div class="k">tonnes per day, VLSFO-equivalent</div></div>
+            <div><div class="k">Per nautical mile</div><div class="big" id="l-nm">–</div><div class="k">tonnes per nm</div></div>
+            <div><div class="k">Model accuracy</div><div class="big" id="l-acc">–</div><div class="k" id="l-acc2">average error on unseen voyages</div></div>
+          </div>
+          <h2>Burn against speed</h2>
+          <p class="cap">Fuel use rises roughly with the cube of speed, so a small slowdown saves a lot.</p>
+          <svg id="l-chart" viewBox="0 0 640 260" width="100%" role="img" aria-label="Predicted fuel burn per day against speed"></svg>
+          <div class="legend"><span class="ln" style="--c:var(--opt)">Learned model</span><span class="ln" style="--c:var(--ink2)">Reference physics curve</span></div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <h2>A 500 nm leg on each fuel this vessel can burn</h2>
+          <p class="cap">Same energy, different cost and emissions.</p>
+          <div class="scroll"><table id="l-fuels" style="min-width:520px"></table></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== HOW IT WORKS ===================== -->
+  <section id="p-how" role="tabpanel" aria-labelledby="t-how" class="hidden">
+    <div class="how">
+      <div class="flow">
+        <div><b>Voyage data</b><span>Route, cargo, deadline, weather, vessel specs</span></div>
+        <div><b>Fuel predictor</b><span>Regression model learns burn from speed, load, waves</span></div>
+        <div><b>Quantum-inspired optimizer</b><span>Searches vessel, speed, fuel and shore power together</span></div>
+        <div><b>Green fleet plan</b><span>Lower fuel, cost and CO₂e, all voyages on time</span></div>
+      </div>
+      <h2>Fuel prediction</h2>
+      <p>For every vessel, speed, load and sea state, the predictor estimates daily fuel burn. In this demo a log-linear regression is trained on 3,000 synthetic voyage records with 4% measurement noise, then tested on 800 unseen ones. With real noon reports, AIS tracks and weather feeds, the same slot can hold gradient boosting or a neural network without changing the optimizer.</p>
+      <h2>Quantum-inspired optimization</h2>
+      <p>Each plan is written as 54 bits: nine per voyage, covering vessel, speed level, fuel and shore power. Instead of fixed bits, every position holds a qubit-style angle that gives the probability of being 0 or 1. Each round, every candidate plan is "observed" into a real plan, scored, and its angles are rotated toward the best plan found so far, with occasional NOT-gate flips to keep exploring.</p>
+      <p>This runs on an ordinary CPU. It borrows the maths of quantum computing but does not use a quantum computer. The progress chart compares it with random search given the same number of tries.</p>
+      <h2>What the optimizer must respect</h2>
+      <ul>
+        <li>Each vessel serves at most one voyage, and must suit the cargo type and carry the full load.</li>
+        <li>Every voyage meets its deadline, after speed loss in rough seas and current assistance or drag.</li>
+        <li>Each vessel can only burn the fuels its engine supports.</li>
+        <li>Shore power only helps at ports that offer it, and only on vessels that can connect.</li>
+      </ul>
+      <h2>Assumptions to replace with real data</h2>
+      <ul>
+        <li>Fuel prices per tonne: VLSFO $640, LNG $560, bio-methanol $480, green ammonia $650.</li>
+        <li>Net CO₂e per tonne of fuel: VLSFO 3.21, LNG 2.95 (includes methane slip), bio-methanol 0.55, green ammonia 0.</li>
+        <li>Shore power costs 55% of onboard generation fuel cost and emits 30% as much, assuming a mostly renewable supply.</li>
+        <li>Vessel hire, port time (24 hours per call), wave heights and currents are round illustrative numbers.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+//<CORE>
+/* ============================== DATA ============================== */
+const FUELS=[
+  {id:'VLSFO',n:'VLSFO',lhv:41.0,ef:3.206,price:640,cv:'--f-vlsfo'},
+  {id:'LNG',n:'LNG',lhv:49.5,ef:2.95,price:560,cv:'--f-lng'},
+  {id:'MEOH',n:'Bio-methanol',lhv:19.9,ef:0.55,price:480,cv:'--f-meoh'},
+  {id:'NH3',n:'Green ammonia',lhv:18.6,ef:0.0,price:650,cv:'--f-nh3'}
+];
+const PORTS={
+  MUN:{n:'Mundra',ll:[69.7,22.75],shore:true},
+  MUM:{n:'Mumbai',ll:[72.85,18.95],shore:true},
+  MNG:{n:'Mangalore',ll:[74.8,12.9],shore:false},
+  KOC:{n:'Kochi',ll:[76.25,9.97],shore:true},
+  MAA:{n:'Chennai',ll:[80.3,13.1],shore:true},
+  VTZ:{n:'Visakhapatnam',ll:[83.3,17.7],shore:false},
+  PRD:{n:'Paradip',ll:[86.7,20.3],shore:false},
+  HAL:{n:'Haldia',ll:[88.1,21.65],shore:true}
+};
+const TRACK=[
+  {p:'MUN'},{ll:[68.6,21.9]},{ll:[70.4,20.3]},{p:'MUM'},{ll:[72.4,16.5]},{ll:[73.2,14.2]},
+  {p:'MNG'},{p:'KOC'},{ll:[75.9,8.2]},{ll:[77.4,7.2],cape:true},{ll:[79.9,5.4]},{ll:[82.2,6.0]},
+  {ll:[82.6,8.6]},{ll:[81.2,11.2]},{p:'MAA'},{p:'VTZ'},{ll:[85.6,18.9]},{p:'PRD'},{p:'HAL'}
+];
+TRACK.forEach(n=>{ if(n.p) n.ll=PORTS[n.p].ll; });
+const CAPE=TRACK.findIndex(n=>n.cape);
+
+const FLEET=[
+  {id:'GOD',n:'MV Godavari',type:'Handysize bulker',cap:28000,vmin:10,vmax:14,vref:12,B:19,hire:7000,aux:3.0,classes:['bulk','general'],fuels:[0,2],shore:true},
+  {id:'NAR',n:'MV Narmada',type:'Handymax bulker',cap:45000,vmin:10,vmax:14.5,vref:13,B:26,hire:9000,aux:3.5,classes:['bulk','general'],fuels:[0,1],shore:false},
+  {id:'SAB',n:'MV Sabarmati',type:'Supramax bulker',cap:58000,vmin:11,vmax:15,vref:13.5,B:31,hire:11000,aux:4.0,classes:['bulk','general'],fuels:[0,1,2],shore:true},
+  {id:'KRI',n:'MV Krishna',type:'Feeder container ship',cap:24000,vmin:14,vmax:19,vref:17,B:38,hire:10000,aux:5.0,classes:['container'],fuels:[0,1],shore:true},
+  {id:'MAH',n:'MV Mahanadi',type:'Container ship',cap:38000,vmin:15,vmax:20,vref:18,B:55,hire:15000,aux:6.0,classes:['container'],fuels:[0,2],shore:true},
+  {id:'HOO',n:'MV Hooghly',type:'Product tanker',cap:40000,vmin:11,vmax:14.5,vref:13,B:24,hire:13000,aux:5.0,classes:['liquid'],fuels:[0,2,3],shore:true},
+  {id:'TAP',n:'MV Tapti',type:'Coastal ro-ro',cap:9000,vmin:12,vmax:17,vref:15,B:18,hire:8000,aux:2.5,classes:['general'],fuels:[0,1],shore:false},
+  {id:'SUN',n:'MV Sundarbans Star',type:'Aframax tanker',cap:75000,vmin:10,vmax:14,vref:13,B:38,hire:18000,aux:6.0,classes:['liquid'],fuels:[0,1],shore:false}
+];
+const VOYAGES=[
+  {id:'V1',from:'MUN',to:'MAA',cargo:21000,cls:'bulk',label:'Coking coal',minSpd:10.5},
+  {id:'V2',from:'MUM',to:'KOC',cargo:22000,cls:'container',label:'Containers',minSpd:15.5},
+  {id:'V3',from:'KOC',to:'HAL',cargo:40000,cls:'bulk',label:'Bulk minerals',minSpd:11},
+  {id:'V4',from:'MAA',to:'PRD',cargo:35000,cls:'liquid',label:'Refined products',minSpd:12},
+  {id:'V5',from:'VTZ',to:'MUM',cargo:7500,cls:'general',label:'Project cargo',minSpd:12.5},
+  {id:'V6',from:'HAL',to:'MNG',cargo:52000,cls:'bulk',label:'Fertiliser',minSpd:11.5}
+];
+const NV=VOYAGES.length, NF=FLEET.length;
+const SCEN={
+  calm:{name:'Calm',hsW:1.0,hsE:1.2,cur:0.2},
+  monsoon:{name:'Monsoon swell',hsW:3.4,hsE:2.0,cur:0.7},
+  cyclone:{name:'Cyclone alert',hsW:1.8,hsE:4.6,cur:1.0}
+};
+
+/* ============================== ROUTES ============================== */
+const R2D=Math.PI/180;
+function haversineNm(a,b){
+  const R=6371.0088, dLat=(b[1]-a[1])*R2D, dLon=(b[0]-a[0])*R2D;
+  const s=Math.sin(dLat/2)**2+Math.cos(a[1]*R2D)*Math.cos(b[1]*R2D)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s))/1.852;
+}
+function buildRoute(a,b){
+  const ia=TRACK.findIndex(n=>n.p===a), ib=TRACK.findIndex(n=>n.p===b), step=ib>ia?1:-1;
+  const nodes=[]; for(let i=ia;i!==ib+step;i+=step) nodes.push(i);
+  let dist=0, west=0;
+  for(let k=0;k<nodes.length-1;k++){
+    const i=nodes[k], j=nodes[k+1], d=haversineNm(TRACK[i].ll,TRACK[j].ll);
+    dist+=d; if(Math.min(i,j)+1<=CAPE) west+=d;
+  }
+  return {nodes,dist,wFrac:west/dist,dir:step};
+}
+VOYAGES.forEach(v=>{ v.route=buildRoute(v.from,v.to); v.deadline=v.route.dist/v.minSpd; });
+function hsFor(R,sc){ return R.wFrac*SCEN[sc].hsW+(1-R.wFrac)*SCEN[sc].hsE; }
+const COMPAT=VOYAGES.map(v=>FLEET.map((f,i)=>(f.classes.includes(v.cls)&&f.cap>=v.cargo)?i:-1).filter(i=>i>=0));
+const ORDER=[...Array(NV).keys()].sort((a,b)=>COMPAT[a].length-COMPAT[b].length||VOYAGES[b].cargo-VOYAGES[a].cargo);
+
+/* ============================== FUEL PREDICTOR (learned) ============================== */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function truthRate(ves,v,load,hs){
+  return ves.B*Math.pow(v/ves.vref,3)*(0.62+0.38*Math.pow(load,2/3))*(1+0.045*Math.pow(hs,1.2));
+}
+function feats(ves,v,load,hs){ return [1,Math.log(v/ves.vref),Math.log(load),hs,Math.log(ves.B)]; }
+let MODEL={w:[0,3,0.4,0.03,1],r2:0,mape:0};
+function solve(A,b){
+  const n=b.length, M=A.map((r,i)=>[...r,b[i]]);
+  for(let c=0;c<n;c++){
+    let p=c; for(let r=c+1;r<n;r++) if(Math.abs(M[r][c])>Math.abs(M[p][c])) p=r;
+    [M[c],M[p]]=[M[p],M[c]];
+    for(let r=0;r<n;r++){ if(r===c) continue; const f=M[r][c]/M[c][c]; for(let k=c;k<=n;k++) M[r][k]-=f*M[c][k]; }
+  }
+  return M.map((r,i)=>r[n]/r[i]);
+}
+function trainModel(seed){
+  const rnd=mulberry32(seed||7);
+  const gauss=()=>{let u=0;while(!u)u=rnd();const v=rnd();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
+  const sample=()=>{
+    const ves=FLEET[Math.floor(rnd()*NF)];
+    const v=ves.vmin+(ves.vmax-ves.vmin)*rnd(), load=0.15+0.85*rnd(), hs=0.3+5.2*rnd();
+    return {ves,v,load,hs,y:truthRate(ves,v,load,hs)*Math.exp(0.04*gauss())};
+  };
+  const tr=Array.from({length:3000},sample), te=Array.from({length:800},sample);
+  const K=5, XtX=Array.from({length:K},()=>new Array(K).fill(0)), Xty=new Array(K).fill(0);
+  for(const s of tr){
+    const x=feats(s.ves,s.v,s.load,s.hs), y=Math.log(s.y);
+    for(let i=0;i<K;i++){ Xty[i]+=x[i]*y; for(let j=0;j<K;j++) XtX[i][j]+=x[i]*x[j]; }
+  }
+  for(let i=0;i<K;i++) XtX[i][i]+=1e-6;
+  const w=solve(XtX,Xty);
+  const pred=s=>Math.exp(feats(s.ves,s.v,s.load,s.hs).reduce((a,f,i)=>a+f*w[i],0));
+  let sse=0,sst=0,ape=0,mean=te.reduce((a,s)=>a+s.y,0)/te.length;
+  for(const s of te){ const p=pred(s); sse+=(p-s.y)**2; sst+=(s.y-mean)**2; ape+=Math.abs(p-s.y)/s.y; }
+  MODEL={w,r2:1-sse/sst,mape:ape/te.length};
+  return MODEL;
+}
+function predictRate(ves,v,load,hs){
+  const f=feats(ves,v,load,hs), w=MODEL.w; let s=0; for(let i=0;i<5;i++) s+=w[i]*f[i];
+  return Math.exp(s);
+}
+
+/* ============================== VOYAGE + PLAN EVALUATION ============================== */
+function evalVoyage(i,p,sc){
+  const vy=VOYAGES[i], ves=FLEET[p.vi], R=vy.route, F=FUELS[p.fi];
+  const hs=hsFor(R,sc), cur=SCEN[sc].cur*R.dir, loss=0.3*Math.max(0,hs-2.5);
+  const sog=p.v+cur-loss, hours=R.dist/sog, days=hours/24, load=vy.cargo/ves.cap;
+  const rate=predictRate(ves,p.v,load,hs), seaEq=rate*days;
+  const useShore=!!(p.shore&&ves.shore);
+  const nShore=useShore?((PORTS[vy.from].shore?1:0)+(PORTS[vy.to].shore?1:0)):0;
+  const berthEq=ves.aux*(2-nShore), shoreEq=ves.aux*nShore;
+  const seaMass=seaEq*FUELS[0].lhv/F.lhv, seaCost=seaMass*F.price, seaCo2=seaMass*F.ef;
+  const berthCost=berthEq*FUELS[0].price, berthCo2=berthEq*FUELS[0].ef;
+  const shoreCost=shoreEq*FUELS[0].price*0.55, shoreCo2=shoreEq*FUELS[0].ef*0.3;
+  const hire=(hours+48)/24*ves.hire;
+  const late=sog<vy.minSpd-1e-9;
+  return {i,vi:p.vi,v:p.v,fi:p.fi,shore:useShore,hs,sog,hours,days,load,rate,
+    eq:seaEq+berthEq,seaEq,berthEq,cost:seaCost+berthCost+shoreCost+hire,hire,
+    co2:seaCo2+berthCo2+shoreCo2,late,deficit:late?vy.minSpd-sog:0,bad:!!p.bad};
+}
+function evalPlan(plan,sc,lam){
+  const voy=plan.map((p,i)=>evalVoyage(i,p,sc));
+  const t={eq:0,cost:0,co2:0,onTime:0,pen:0,mix:[0,0,0,0]};
+  for(const r of voy){
+    t.eq+=r.eq; t.cost+=r.cost; t.co2+=r.co2;
+    if(!r.late) t.onTime++; else t.pen+=1e6+2e5*r.deficit;
+    if(r.bad) t.pen+=3e6;
+    t.mix[r.fi]+=r.seaEq; t.mix[0]+=r.berthEq;
+  }
+  t.fit=t.cost+lam*t.co2+t.pen;
+  return {voy,total:t};
+}
+function neededSpeed(i,vi,sc){
+  const vy=VOYAGES[i], R=vy.route, hs=hsFor(R,sc);
+  return vy.minSpd-SCEN[sc].cur*R.dir+0.3*Math.max(0,hs-2.5);
+}
+function baselinePlan(sc){
+  const used=new Set(), plan=new Array(NV);
+  const order=[...Array(NV).keys()].sort((a,b)=>VOYAGES[b].cargo-VOYAGES[a].cargo);
+  for(const i of order){
+    let vi=COMPAT[i].find(c=>!used.has(c)), bad=false;
+    if(vi===undefined){ vi=FLEET.findIndex((f,k)=>!used.has(k)); bad=true; }
+    used.add(vi);
+    const ves=FLEET[vi];
+    const v=Math.min(ves.vmax,Math.max(ves.vref,neededSpeed(i,vi,sc)));
+    plan[i]={vi,v,fi:0,shore:false,bad};
+  }
+  return plan;
+}
+
+/* ============================== QUANTUM-INSPIRED GA ============================== */
+const BITS=9, L=NV*BITS;
+function decode(bits,sc){
+  const used=new Array(NF).fill(false), plan=new Array(NV);
+  const g=(i,o,n)=>{let x=0;for(let k=0;k<n;k++)x=x*2+bits[i*BITS+o+k];return x;};
+  for(const i of ORDER){
+    const start=g(i,0,3); let vi=-1,bad=false;
+    for(let k=0;k<NF;k++){ const c=(start+k)%NF; if(!used[c]&&COMPAT[i].includes(c)){vi=c;break;} }
+    if(vi<0){ bad=true; for(let k=0;k<NF;k++){ const c=(start+k)%NF; if(!used[c]){vi=c;break;} } }
+    used[vi]=true;
+    const ves=FLEET[vi];
+    let v=ves.vmin+(ves.vmax-ves.vmin)*g(i,3,3)/7;
+    const need=neededSpeed(i,vi,sc);
+    if(v<need) v=Math.min(ves.vmax,need);
+    const fi=ves.fuels[g(i,6,2)%ves.fuels.length];
+    plan[i]={vi,v,fi,shore:g(i,8,1)===1,bad};
+  }
+  return plan;
+}
+function createQIGA(P,G){
+  const pop=[]; for(let n=0;n<P;n++) pop.push({th:new Float32Array(L).fill(Math.PI/4),bits:new Uint8Array(L),fit:Infinity});
+  return {gen:0,P,G,pop,best:null,bestFit:Infinity,bestPlan:null,hist:[],rhist:[],rbest:Infinity};
+}
+function stepGen(s,sc,lam){
+  for(const ind of s.pop){
+    for(let j=0;j<L;j++) ind.bits[j]=Math.random()<Math.sin(ind.th[j])**2?1:0;
+    const plan=decode(ind.bits,sc), e=evalPlan(plan,sc,lam);
+    ind.fit=e.total.fit;
+    if(ind.fit<s.bestFit){ s.bestFit=ind.fit; s.best=Uint8Array.from(ind.bits); s.bestPlan=plan; }
+  }
+  const delta=Math.PI*(0.012-0.008*s.gen/s.G), lo=0.08, hi=Math.PI/2-0.08;
+  for(const ind of s.pop){
+    if(ind.fit>s.bestFit){
+      for(let j=0;j<L;j++){
+        if(ind.bits[j]!==s.best[j]) ind.th[j]+= s.best[j]===1?delta:-delta;
+        else ind.th[j]+= (ind.bits[j]===1?1:-1)*delta*0.25;
+      }
+    }
+    if(Math.random()<0.15){ for(let m=0;m<2;m++){ const j=Math.floor(Math.random()*L); ind.th[j]=Math.PI/2-ind.th[j]; } }
+    for(let j=0;j<L;j++) ind.th[j]=Math.min(hi,Math.max(lo,ind.th[j]));
+  }
+  // random search with the same number of evaluations
+  const rb=new Uint8Array(L);
+  for(let n=0;n<s.P;n++){
+    for(let j=0;j<L;j++) rb[j]=Math.random()<0.5?1:0;
+    const f=evalPlan(decode(rb,sc),sc,lam).total.fit; if(f<s.rbest) s.rbest=f;
+  }
+  s.hist.push(s.bestFit); s.rhist.push(s.rbest); s.gen++;
+}
+//</CORE>
+
+/* ============================== UI ============================== */
+const $=s=>document.querySelector(s);
+const NS='http://www.w3.org/2000/svg';
+const st={sc:'monsoon',lam:150,P:40,G:150,base:null,opt:null,run:0,sel:null,qiga:null,running:false};
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt=(x,d=0)=>x.toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:d});
+const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function el(tag,attrs,parent,text){
+  const e=document.createElementNS(NS,tag);
+  for(const k in attrs) e.setAttribute(k,attrs[k]);
+  if(text!==undefined) e.textContent=text;
+  if(parent) parent.appendChild(e);
+  return e;
+}
+
+/* ---------- map ---------- */
+const MW=1000, MH=836;
+const X=lon=>(lon-66.5)/26*MW, Y=lat=>(25.5-lat)/21*MH;
+const LAND=[[60,31],[60,25],[67,24.8],[68.2,23.7],[68.9,23.0],[69.2,22.95],[70.2,22.92],[70.5,22.65],[69.9,22.35],[69.05,22.4],[69.1,22.15],[69.6,21.65],[70.4,20.9],[71.0,20.7],[72.1,21.3],[72.4,22.2],[72.8,22.2],[72.75,21.2],[72.8,20.4],[72.8,18.95],[73.3,17.0],[73.8,15.4],[74.1,14.8],[74.8,12.9],[75.4,11.8],[76.0,10.4],[76.3,9.5],[76.55,8.9],[77.0,8.35],[77.55,8.08],[78.15,8.6],[79.0,9.2],[79.3,9.3],[79.85,10.3],[79.85,10.75],[79.85,11.9],[80.3,13.1],[80.3,13.6],[80.1,14.4],[80.1,15.4],[80.9,15.8],[81.2,16.1],[82.3,16.95],[83.3,17.7],[84.2,18.4],[84.9,19.3],[85.8,19.8],[86.7,20.3],[87.0,21.2],[87.1,21.6],[88.0,21.7],[89.0,21.8],[89.3,22.0],[90.8,22.5],[91.8,22.6],[93.5,21.5],[93.5,31]];
+const LANKA=[[79.8,9.8],[80.2,9.8],[80.9,9.2],[81.2,8.5],[81.7,7.7],[81.85,6.8],[81.3,6.2],[80.6,5.92],[80.0,6.4],[79.85,7.5],[79.8,9.8]];
+let mapState={routes:{},ships:[],raf:0};
+function pathD(pts){ return pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' '); }
+function buildMap(){
+  const svg=$('#map'); svg.innerHTML='';
+  el('rect',{x:0,y:0,width:MW,height:MH,fill:'var(--water)'},svg);
+  const g=el('g',{},svg);
+  for(let lon=70;lon<=90;lon+=5){ el('line',{x1:X(lon),y1:0,x2:X(lon),y2:MH,stroke:'var(--grid)','stroke-width':1},g); el('text',{x:X(lon)+5,y:MH-8,fill:'var(--ink2)','font-size':15},g,lon+'°E'); }
+  for(let lat=5;lat<=25;lat+=5){ el('line',{x1:0,y1:Y(lat),x2:MW,y2:Y(lat),stroke:'var(--grid)','stroke-width':1},g); el('text',{x:MW-46,y:Y(lat)-5,fill:'var(--ink2)','font-size':15},g,lat+'°N'); }
+  el('path',{d:pathD(LAND)+'Z',fill:'var(--land)',stroke:'var(--landline)','stroke-width':1.5,'stroke-linejoin':'round'},svg);
+  el('path',{d:pathD(LANKA)+'Z',fill:'var(--land)',stroke:'var(--landline)','stroke-width':1.5,'stroke-linejoin':'round'},svg);
+  el('text',{x:X(80.9),y:Y(7.7),'text-anchor':'middle',fill:'var(--ink2)','font-size':13,'font-style':'italic'},svg,'Sri Lanka');
+  el('text',{x:X(72),y:Y(14),fill:'var(--ink2)','font-size':20,'font-style':'italic','text-anchor':'middle',opacity:.75},svg,'Arabian Sea');
+  el('text',{x:X(86.2),y:Y(13.5),fill:'var(--ink2)','font-size':20,'font-style':'italic','text-anchor':'middle',opacity:.75},svg,'Bay of Bengal');
+  el('text',{x:X(76.5),y:Y(20.5),fill:'var(--ink2)','font-size':26,'font-style':'italic','text-anchor':'middle',opacity:.5},svg,'INDIA');
+  const baseG=el('g',{id:'g-base'},svg), optG=el('g',{id:'g-opt'},svg), shipG=el('g',{id:'g-ship'},svg);
+  mapState.routes={};
+  VOYAGES.forEach(v=>{
+    const pts=v.route.nodes.map(n=>TRACK[n].ll), d=pathD(pts);
+    el('path',{d,fill:'none',stroke:'var(--base)','stroke-width':2,'stroke-dasharray':'7 6','stroke-linecap':'round','stroke-linejoin':'round',class:'rb','data-v':v.id},baseG);
+    const p=el('path',{d,fill:'none',stroke:'var(--opt)','stroke-width':3.5,'stroke-linecap':'round','stroke-linejoin':'round',class:'ro','data-v':v.id},optG);
+    mapState.routes[v.id]=p;
+  });
+  // ports
+  const pg=el('g',{},svg);
+  Object.keys(PORTS).forEach(k=>{
+    const P=PORTS[k], x=X(P.ll[0]), y=Y(P.ll[1]), west=['MUN','MUM','MNG','KOC'].includes(k);
+    el('circle',{cx:x,cy:y,r:6.5,fill:'var(--card)',stroke:'var(--ink)','stroke-width':2.5},pg);
+    const t=el('text',{x:x+(west?-12:12),y:y+5,'text-anchor':west?'end':'start',fill:'var(--ink)','font-size':19,'font-weight':600,'paint-order':'stroke',stroke:'var(--water)','stroke-width':4,'stroke-linejoin':'round'},pg,P.n);
+    if(P.shore) el('text',{x:x+(west?-12:12),y:y+22,'text-anchor':west?'end':'start',fill:'var(--good)','font-size':13,'font-weight':600,'paint-order':'stroke',stroke:'var(--water)','stroke-width':3},pg,'shore power');
+  });
+  // ships
+  mapState.ships=[];
+  VOYAGES.forEach((v,i)=>{
+    const g2=el('g',{class:'ship','data-v':v.id,visibility:'hidden'},shipG);
+    el('circle',{r:12,fill:'var(--opt)',stroke:'var(--card)','stroke-width':2.5},g2);
+    el('text',{y:4.5,'text-anchor':'middle',fill:'#fff','font-size':12,'font-weight':700},g2,v.id);
+    mapState.ships.push({g:g2,v,phase:i/NV});
+  });
+  // compass
+  const c=el('g',{transform:'translate(900 730)'},svg);
+  el('circle',{r:30,fill:'none',stroke:'var(--ink2)','stroke-width':1.2},c);
+  el('path',{d:'M0 -26 L7 0 L0 26 L-7 0 Z',fill:'var(--ink2)',opacity:.35},c);
+  el('path',{d:'M0 -26 L7 0 L-7 0 Z',fill:'var(--opt)'},c);
+  el('text',{y:-36,'text-anchor':'middle',fill:'var(--ink)','font-size':15,'font-weight':600},c,'N');
+  applySelection();
+}
+function applySelection(){
+  const s=st.sel;
+  document.querySelectorAll('#g-opt .ro').forEach(p=>{ const on=!s||p.dataset.v===s; p.setAttribute('opacity',on?(s?1:.75):.12); p.setAttribute('stroke-width',s&&on?5.5:3.5); });
+  document.querySelectorAll('#g-base .rb').forEach(p=>{ const on=!s||p.dataset.v===s; p.setAttribute('opacity',on?(s?1:.5):.08); });
+  document.querySelectorAll('.ship').forEach(g=>g.setAttribute('opacity',!s||g.dataset.v===s?1:.2));
+  document.querySelectorAll('#chips .chip').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.v===s)));
+  document.querySelectorAll('#tbl tbody tr').forEach(r=>r.classList.toggle('sel',r.dataset.v===s));
+}
+function selectVoyage(id){ st.sel=st.sel===id?null:id; applySelection(); }
+function animateShips(t){
+  for(const s of mapState.ships){
+    const path=mapState.routes[s.v.id]; if(!path) continue;
+    const len=path.getTotalLength();
+    const prog=reduceMotion?0.5:(((t/1000)/22+s.phase)%1);
+    const pt=path.getPointAtLength(len*prog);
+    s.g.setAttribute('transform',`translate(${pt.x.toFixed(1)} ${pt.y.toFixed(1)})`);
+  }
+  mapState.raf=reduceMotion?0:requestAnimationFrame(animateShips);
+}
+
+/* ---------- charts ---------- */
+function drawConv(){
+  const svg=$('#conv'); svg.innerHTML='';
+  const q=st.qiga; if(!q||!q.hist.length) return;
+  const W=560,H=250,ml=62,mr=12,mt=10,mb=30;
+  const base=st.base.total.fit;
+  const all=[...q.hist,...q.rhist,base];
+  let lo=Math.min(...all), hi=Math.max(...all);
+  const pad=(hi-lo)*0.08||1; lo-=pad; hi+=pad;
+  const x=i=>ml+(W-ml-mr)*i/Math.max(1,q.G-1), y=v=>mt+(H-mt-mb)*(1-(v-lo)/(hi-lo));
+  for(let k=0;k<=4;k++){
+    const v=lo+(hi-lo)*k/4, yy=y(v);
+    el('line',{x1:ml,x2:W-mr,y1:yy,y2:yy,stroke:'var(--grid)'},svg);
+    el('text',{x:ml-8,y:yy+4,'text-anchor':'end',fill:'var(--ink2)','font-size':13},svg,'$'+fmt(v/1000)+'k');
+  }
+  [0,0.5,1].forEach(f=>{ const i=Math.round((q.G-1)*f); el('text',{x:x(i),y:H-8,'text-anchor':f===0?'start':f===1?'end':'middle',fill:'var(--ink2)','font-size':13},svg,f===0?'round 1':'round '+Math.round(q.G*f)); });
+  el('line',{x1:ml,x2:W-mr,y1:y(base),y2:y(base),stroke:'var(--base)','stroke-width':2,'stroke-dasharray':'6 5'},svg);
+  const line=(arr,color,w)=>el('path',{d:arr.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' '),fill:'none',stroke:color,'stroke-width':w,'stroke-linejoin':'round'},svg);
+  line(q.rhist,'var(--ink2)',2); line(q.hist,'var(--opt)',3.2);
+}
+function drawMix(){
+  const svg=$('#mix'); svg.innerHTML=''; if(!st.opt) return;
+  const rows=[['Existing plan',st.base.total],['Optimized plan',st.opt.total]];
+  rows.forEach(([name,t],r)=>{
+    const sum=t.mix.reduce((a,b)=>a+b,0), y=18+r*76;
+    el('text',{x:0,y:y,fill:'var(--ink)','font-size':15,'font-weight':600},svg,name);
+    let xx=0; const W=420;
+    t.mix.forEach((m,i)=>{
+      const w=W*m/sum; if(w<0.5) return;
+      el('rect',{x:xx,y:y+8,width:w,height:30,fill:`var(${FUELS[i].cv})`},svg);
+      if(w>38) el('text',{x:xx+w/2,y:y+28,'text-anchor':'middle',fill:'#fff','font-size':13,'font-weight':600},svg,Math.round(100*m/sum)+'%');
+      xx+=w;
+    });
+  });
+  $('#mixlegend').innerHTML=FUELS.map(f=>`<span style="--c:var(${f.cv})">${f.n}</span>`).join('');
+}
+
+/* ---------- KPIs + table ---------- */
+function delta(opt,base,unit){
+  const d=(opt-base)/base*100, down=d<=0;
+  return `<span class="delta ${down?'':'up'}">${down?'▼':'▲'} ${fmt(Math.abs(d),1)}%</span>`;
+}
+function drawKpis(){
+  const b=st.base.total, o=st.opt.total;
+  const items=[
+    ['Onboard fuel',fmt(o.eq),'t VLSFO-eq',delta(o.eq,b.eq),'was '+fmt(b.eq)+' t'],
+    ['Operating cost','$'+fmt(o.cost/1000),'thousand',delta(o.cost,b.cost),'was $'+fmt(b.cost/1000)+'k'],
+    ['Net CO₂e',fmt(o.co2),'tonnes',delta(o.co2,b.co2),'was '+fmt(b.co2)+' t'],
+    ['Voyages on time',o.onTime+' / '+NV,'',o.onTime>=b.onTime?'<span class="delta">All deadlines checked</span>':'<span class="delta up">Check plan</span>','existing plan '+b.onTime+' / '+NV]
+  ];
+  $('#kpis').innerHTML=items.map(([k,v,u,d,w])=>`<div class="kpi"><div class="k">${k}</div><div class="v">${v}<small>${u}</small></div><div class="w">${d}${w}</div></div>`).join('');
+}
+function drawTable(){
+  const b=st.base.voy, o=st.opt.voy;
+  const head='<thead><tr><th>Voyage</th><th>Distance</th><th>Existing plan</th><th>Optimized plan</th><th>Cost</th><th>CO₂e</th></tr></thead>';
+  const rows=VOYAGES.map((v,i)=>{
+    const a=b[i], c=o[i], A=FLEET[a.vi], C=FLEET[c.vi];
+    const dc=(c.cost-a.cost)/a.cost*100, de=a.co2>0?(c.co2-a.co2)/a.co2*100:0;
+    const cls=x=>x<=0?'pos':'neg';
+    return `<tr data-v="${v.id}"><td><b>${v.id}</b> ${PORTS[v.from].n} to ${PORTS[v.to].n}<span class="sm">${fmt(v.cargo)} t ${v.label.toLowerCase()}</span></td>
+    <td>${fmt(v.route.dist)} nm<span class="sm">deadline ${fmt(v.deadline/24,1)} days</span></td>
+    <td>${A.n}<span class="sm">${fmt(a.v,1)} kn, ${FUELS[a.fi].n}</span></td>
+    <td>${C.n}${c.shore?'<span class="tag">shore power</span>':''}<span class="sm">${fmt(c.v,1)} kn, ${FUELS[c.fi].n}${c.late?', LATE':''}</span></td>
+    <td class="${cls(dc)}">${dc<=0?'−':'+'}${fmt(Math.abs(dc),1)}%</td>
+    <td class="${cls(de)}">${de<=0?'−':'+'}${fmt(Math.abs(de),1)}%</td></tr>`;
+  }).join('');
+  $('#tbl').innerHTML=head+'<tbody>'+rows+'</tbody>';
+  document.querySelectorAll('#tbl tbody tr').forEach(r=>r.addEventListener('click',()=>selectVoyage(r.dataset.v)));
+  applySelection();
+}
+function drawWx(){
+  const s=SCEN[st.sc];
+  $('#wx').innerHTML=`<b>${s.name}</b>: waves ${fmt(s.hsW,1)} m on the west coast, ${fmt(s.hsE,1)} m on the east coast, current ${fmt(s.cur,1)} kn along the Mundra to Haldia direction. Waves above 2.5 m slow ships down.`;
+}
+function showResult(){
+  drawKpis(); drawTable(); drawMix(); drawConv();
+  document.querySelectorAll('.ship').forEach(g=>g.setAttribute('visibility','visible'));
+}
+
+/* ---------- run ---------- */
+function runOptimizer(){
+  const token=++st.run;
+  st.base=evalPlan(baselinePlan(st.sc),st.sc,st.lam);
+  st.qiga=createQIGA(st.P,st.G);
+  st.running=true; $('#run').disabled=true; drawWx();
+  const q=st.qiga;
+  const finish=()=>{
+    st.running=false; $('#run').disabled=false;
+    st.opt=evalPlan(q.bestPlan,st.sc,st.lam);
+    showResult();
+    const saved=(1-st.opt.total.co2/st.base.total.co2)*100;
+    $('#status').textContent=`Done after ${q.G} rounds and ${fmt(q.G*q.P)} candidate plans. CO₂e ${saved>=0?'down':'up'} ${fmt(Math.abs(saved),1)}%.`;
+  };
+  const frame=()=>{
+    if(token!==st.run) return;
+    stepGen(q,st.sc,st.lam);
+    if(q.gen%2===0||q.gen===q.G){
+      st.opt=evalPlan(q.bestPlan,st.sc,st.lam);
+      drawKpis(); drawConv(); drawMix(); drawTable();
+      document.querySelectorAll('.ship').forEach(g=>g.setAttribute('visibility','visible'));
+    }
+    $('#status').textContent=`Searching: round ${q.gen} of ${q.G}`;
+    if(q.gen<q.G) requestAnimationFrame(frame); else finish();
+  };
+  if(reduceMotion){ while(q.gen<q.G) stepGen(q,st.sc,st.lam); finish(); }
+  else requestAnimationFrame(frame);
+}
+
+/* ---------- predictor lab ---------- */
+function drawLab(){
+  const ves=FLEET[+$('#l-ves').value], vS=$('#l-v');
+  const v=+vS.value, load=+$('#l-load').value/100, hs=+$('#l-hs').value;
+  $('#o-lv').textContent=fmt(v,1)+' kn'; $('#o-ll').textContent=Math.round(load*100)+'% ('+fmt(ves.cap*load)+' t)'; $('#o-lh').textContent=fmt(hs,1)+' m';
+  const rate=predictRate(ves,v,load,hs);
+  $('#l-rate').textContent=fmt(rate,1); $('#l-nm').textContent=fmt(rate/(24*v),3);
+  $('#l-acc').textContent=fmt(MODEL.mape*100,1)+'%'; $('#l-acc2').textContent='average error on 800 unseen voyages, R² '+fmt(MODEL.r2,3);
+  const svg=$('#l-chart'); svg.innerHTML='';
+  const W=640,H=260,ml=52,mr=14,mt=12,mb=34, n=40;
+  const sp=Array.from({length:n},(_,i)=>ves.vmin+(ves.vmax-ves.vmin)*i/(n-1));
+  const lm=sp.map(s=>predictRate(ves,s,load,hs)), ref=sp.map(s=>truthRate(ves,s,load,hs));
+  const hi=Math.max(...lm,...ref)*1.08, x=s=>ml+(W-ml-mr)*(s-ves.vmin)/(ves.vmax-ves.vmin), y=r=>mt+(H-mt-mb)*(1-r/hi);
+  for(let k=0;k<=4;k++){ const r=hi*k/4; el('line',{x1:ml,x2:W-mr,y1:y(r),y2:y(r),stroke:'var(--grid)'},svg); el('text',{x:ml-8,y:y(r)+4,'text-anchor':'end',fill:'var(--ink2)','font-size':13},svg,fmt(r,0)); }
+  for(let k=0;k<=4;k++){ const s=ves.vmin+(ves.vmax-ves.vmin)*k/4; el('text',{x:x(s),y:H-12,'text-anchor':'middle',fill:'var(--ink2)','font-size':13},svg,fmt(s,1)+' kn'); }
+  const path=(arr,c,w,dash)=>el('path',{d:arr.map((r,i)=>(i?'L':'M')+x(sp[i]).toFixed(1)+' '+y(r).toFixed(1)).join(' '),fill:'none',stroke:c,'stroke-width':w,'stroke-dasharray':dash||'none'},svg);
+  path(ref,'var(--ink2)',2,'6 5'); path(lm,'var(--opt)',3);
+  el('circle',{cx:x(v),cy:y(rate),r:6,fill:'var(--opt)',stroke:'var(--card)','stroke-width':2},svg);
+  // fuel table
+  const eq=rate/24*(500/v);
+  const rows=ves.fuels.map(fi=>{ const F=FUELS[fi], m=eq*FUELS[0].lhv/F.lhv; return `<tr><td>${F.n}</td><td>${fmt(m,1)} t</td><td>$${fmt(m*F.price/1000,1)}k</td><td>${fmt(m*F.ef,1)} t</td></tr>`; }).join('');
+  $('#l-fuels').innerHTML='<thead><tr><th>Fuel</th><th>Fuel mass</th><th>Fuel cost</th><th>Net CO₂e</th></tr></thead><tbody>'+rows+'</tbody>';
+}
+function setLabVessel(){
+  const ves=FLEET[+$('#l-ves').value], s=$('#l-v');
+  s.min=ves.vmin; s.max=ves.vmax; s.value=ves.vref; drawLab();
+}
+
+/* ---------- wiring ---------- */
+function init(){
+  trainModel(7);
+  buildMap();
+  $('#chips').innerHTML=VOYAGES.map(v=>`<button class="chip" data-v="${v.id}" aria-pressed="false">${v.id} ${PORTS[v.from].n} to ${PORTS[v.to].n}</button>`).join('');
+  document.querySelectorAll('#chips .chip').forEach(c=>c.addEventListener('click',()=>selectVoyage(c.dataset.v)));
+  document.querySelectorAll('input[name=sc]').forEach(r=>r.addEventListener('change',()=>{st.sc=r.value;runOptimizer();}));
+  const bind=(id,out,key,f)=>{ const e=$('#'+id); e.addEventListener('input',()=>{$('#'+out).textContent=f(+e.value);}); e.addEventListener('change',()=>{st[key]=+e.value;runOptimizer();}); };
+  bind('lam','o-lam','lam',v=>'$'+v+' / t'); bind('pop','o-pop','P',v=>v); bind('gen','o-gen','G',v=>v);
+  $('#run').addEventListener('click',runOptimizer);
+  // tabs
+  const tabs=[['t-plan','p-plan'],['t-lab','p-lab'],['t-how','p-how']];
+  tabs.forEach(([t,p])=>$('#'+t).addEventListener('click',()=>{
+    tabs.forEach(([t2,p2])=>{ $('#'+t2).setAttribute('aria-selected',String(t2===t)); $('#'+p2).classList.toggle('hidden',p2!==p); });
+    if(t==='t-lab') drawLab();
+  }));
+  // lab
+  $('#l-ves').innerHTML=FLEET.map((f,i)=>`<option value="${i}">${f.n}, ${f.type}</option>`).join('');
+  $('#l-ves').addEventListener('change',setLabVessel);
+  ['l-v','l-load','l-hs'].forEach(id=>$('#'+id).addEventListener('input',drawLab));
+  setLabVessel();
+  mapState.raf=requestAnimationFrame(animateShips);
+  runOptimizer();
+}
+init();
+</script>
+</body>
+</html>
